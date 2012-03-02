@@ -7,18 +7,18 @@ import org.mockito.invocation.InvocationOnMock
 import collection.mutable
 import java.lang.reflect.Method
 import org.scalatest.{FlatSpec, BeforeAndAfterEach}
-import org.mockito.{MockSettings, Matchers, Mockito => Mojito}
+import org.mockito.{MockSettings, Matchers, Mockito}
 import tools.scalap.scalax.rules.scalasig._
 
 trait ImplicitMocks extends BeforeAndAfterEach { self:FlatSpec =>
-  def mock[T](implicit manifest:Manifest[T]) = Mojito.mock(manifest.erasure, new ImplicitAnswer).asInstanceOf[T]
-  def mock[T](answer:Answer[_>:T])(implicit manifest:Manifest[T]) = Mojito.mock(manifest.erasure, answer).asInstanceOf[T]
-  def verify[T](obj:T) = Mojito.verify(obj)
-  def verifyNoMoreInteractions(obj:AnyRef) { Mojito.verifyNoMoreInteractions(obj) }
-  def verify[T](obj:T, verification:VerificationMode) = Mojito.verify(obj, verification)
-  def spy[T](obj:T) = Mojito.spy(obj)
-  def never = Mojito.never()
-  def times(i : Int) = Mojito.times(i)
+  def mock[T](implicit manifest:Manifest[T]) = Mockito.mock(manifest.erasure, new ImplicitAnswer).asInstanceOf[T]
+  def mock[T](answer:Answer[_>:T])(implicit manifest:Manifest[T]) = Mockito.mock(manifest.erasure, answer).asInstanceOf[T]
+  def verify[T](obj:T) = Mockito.verify(obj)
+  def verifyNoMoreInteractions(obj:AnyRef) { Mockito.verifyNoMoreInteractions(obj) }
+  def verify[T](obj:T, verification:VerificationMode) = Mockito.verify(obj, verification)
+  def spy[T](obj:T) = Mockito.spy(obj)
+  def never = Mockito.never()
+  def times(i : Int) = Mockito.times(i)
   def any[T](implicit manifest:Manifest[T]) = Matchers.any(manifest.erasure).asInstanceOf[T]
   def an[T]:T = null.asInstanceOf[T]
   def as[T](obj:T) = obj
@@ -29,10 +29,10 @@ trait ImplicitMocks extends BeforeAndAfterEach { self:FlatSpec =>
   implicit def any2mockito[T](obj:T) = new MockitoExtensions(obj)
   override def afterEach() {
     cache = mutable.Map()
-//    Mojito.validateMockitoUsage()
+//    Mockito.validateMockitoUsage()
   }
 
-  def mock[T](interfaces:Class[_]*)(implicit manifest:Manifest[T]) = Mojito.mock(manifest.erasure, Mojito.withSettings.extraInterfaces(interfaces:_*)).asInstanceOf[T]
+  def mock[T](interfaces:Class[_]*)(implicit manifest:Manifest[T]) = Mockito.mock(manifest.erasure, Mockito.withSettings.extraInterfaces(interfaces:_*)).asInstanceOf[T]
 
   
   case class Arg(mock:AnyRef)
@@ -87,24 +87,25 @@ trait ImplicitMocks extends BeforeAndAfterEach { self:FlatSpec =>
         
         val key = invocation.getMethod
         
-        invocation.getArguments().headOption.orNull match {
-          case null => 
+        def updateAndMock(arg:Arg) = {
+          cache.update(key, arg :: cache.getOrElse(key, Nil))
+          arg.mock
+        }
+        invocation.getArguments().headOption match {
+          case None | Some(null) => 
             cache.get(key) match {
-              case None => 
-                val mock = createMock(invocation)
-                cache.put(key, AnyArg(mock) :: Nil)
-                mock
+              case None => updateAndMock(AnyArg(createMock(invocation))) 
               case Some(list) => list.head.mock 
             }
-          case arg =>
+          case Some(arg) =>
             cache.get(key) match {
-              case None => 
-                val mock = createMock(invocation)
-                cache.put(key, SomeArg(arg, mock) :: Nil)
-                mock
+              case None => updateAndMock(SomeArg(arg, createMock(invocation)))
               case Some(list) => 
                 val someargs = list.grep[SomeArg]
-                someargs.find(_.arg == arg)
+				someargs.find(_.arg == arg)
+					.orElse(list.find(_.isInstanceOf[AnyArg]))
+					.map(_.mock)
+					.getOrElse(updateAndMock(SomeArg(arg, createMock(invocation))))
             }
         }
       } else {
@@ -113,8 +114,8 @@ trait ImplicitMocks extends BeforeAndAfterEach { self:FlatSpec =>
     }
     
    def createMock(invocation:InvocationOnMock) = {
-     Mojito.mock(invocation.getMethod.getReturnType.asInstanceOf[Class[AnyRef]],
-            Mojito.withSettings().name(invocation.getMethod.getName()).extraInterfaces(invocation.getMethod.extraInterfaces:_*))
+     Mockito.mock(invocation.getMethod.getReturnType.asInstanceOf[Class[AnyRef]],
+            Mockito.withSettings().name(invocation.getMethod.getName()).extraInterfaces(invocation.getMethod.extraInterfaces:_*))
    } 
 
   }

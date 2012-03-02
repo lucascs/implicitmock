@@ -4,6 +4,7 @@ trait CourseActivator {
 
   implicit def activateCourse(course:Course) = new ActiveRecord(course) with PimpedCourse {
     def totalSales = 0
+    def likes = 0
   }
   
   
