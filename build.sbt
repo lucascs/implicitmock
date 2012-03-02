@@ -19,7 +19,7 @@ libraryDependencies += "org.mockito"             % "mockito-core"          % "1.
 
 libraryDependencies <+= scalaVersion((v:String) => "org.scala-lang" % "scalap" % v % "test")
 
-libraryDependencies <+= scalaVersion((v:String) => "org.scalatest" % ("scalatest_" + v) % "1.6.1" % "it,test")
+libraryDependencies <+= scalaVersion((v:String) => "org.scalatest" % ("scalatest_" + v) % "1.6.1" % "test")
 
 fork := true
 
