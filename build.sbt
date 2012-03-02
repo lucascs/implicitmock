@@ -15,11 +15,11 @@ resolvers ++= Seq(
 
 //libraryDependencies <+= scalaVersion((v:String) => "org.scala-lang" % "scala-compiler" % v % "compile")
 
-libraryDependencies += "org.mockito"             % "mockito-core"          % "1.8.5"           % "test"
+libraryDependencies += "org.mockito"             % "mockito-core"          % "1.8.5"           % "compile"
 
-libraryDependencies <+= scalaVersion((v:String) => "org.scala-lang" % "scalap" % v % "test")
+libraryDependencies <+= scalaVersion((v:String) => "org.scala-lang" % "scalap" % v % "compile")
 
-libraryDependencies <+= scalaVersion((v:String) => "org.scalatest" % ("scalatest_" + v) % "1.6.1" % "test")
+libraryDependencies <+= scalaVersion((v:String) => "org.scalatest" % ("scalatest_" + v) % "1.6.1" % "compile")
 
 fork := true
 

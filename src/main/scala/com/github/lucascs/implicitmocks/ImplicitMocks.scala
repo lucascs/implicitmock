@@ -10,7 +10,7 @@ import org.scalatest.{FlatSpec, BeforeAndAfterEach}
 import org.mockito.{MockSettings, Matchers, Mockito => Mojito}
 import tools.scalap.scalax.rules.scalasig._
 
-trait Mockito extends BeforeAndAfterEach { self:FlatSpec =>
+trait ImplicitMocks extends BeforeAndAfterEach { self:FlatSpec =>
   def mock[T](implicit manifest:Manifest[T]) = Mojito.mock(manifest.erasure, new ImplicitAnswer).asInstanceOf[T]
   def mock[T](answer:Answer[_>:T])(implicit manifest:Manifest[T]) = Mojito.mock(manifest.erasure, answer).asInstanceOf[T]
   def verify[T](obj:T) = Mojito.verify(obj)
@@ -36,8 +36,8 @@ trait Mockito extends BeforeAndAfterEach { self:FlatSpec =>
 
   
   case class Arg(mock:AnyRef)
-  case class AnyArg(mock:AnyRef) extends Arg(mock)
-  case class SomeArg(arg:AnyRef, mock:AnyRef) extends Arg(mock)
+  case class AnyArg(override val mock:AnyRef) extends Arg(mock)
+  case class SomeArg(arg:AnyRef, override val mock:AnyRef) extends Arg(mock)
   
   private var cache:mutable.Map[Method, List[Arg]] = mutable.Map()
 
