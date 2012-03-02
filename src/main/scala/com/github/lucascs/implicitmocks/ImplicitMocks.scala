@@ -49,36 +49,27 @@ trait ImplicitMocks extends BeforeAndAfterEach { self:FlatSpec =>
     implicit def toImplicit(method:Method) = new {
       def isImplicit:Boolean = {
         val clazz = method.getDeclaringClass
-        (clazz :: clazz.getInterfaces.toList).exists(
-          ScalaSigParser.parse(_) match {
-            case Some(p) =>
-              p.topLevelClasses.head.children.find(_.name == method.getName) match {
-                case Some(m) => m.isImplicit
-                case None => false
-              }
-            case None => false
-          }
-        );
+        (clazz :: clazz.getInterfaces.toList).exists (
+          ScalaSigParser.parse(_).exists(
+          	_.topLevelClasses.head.children.exists(m => m.name == method.getName && m.isImplicit)
+          )
+        )
       }
       trait Mock
       def extraInterfaces:Seq[Class[_]] = {
         val clazz = method.getDeclaringClass
-        val interfaces = (clazz :: clazz.getInterfaces.toList).map(
-          ScalaSigParser.parse(_) match {
-            case Some(p) => p.topLevelClasses.head.children.find(_.name == method.getName)
-            case None => None
-          }
-        ).map {
-          case Some(s) =>
-            val sym = s.asInstanceOf[MethodSymbol]
-             sym.children.grep[ClassSymbol].map(_.infoType match {
-               case r:RefinedType => r.typeRefs.grep[TypeRefType].map(_.symbol).grep[ClassSymbol].map( x =>
-                 Class.forName(x.parent.map((k) => x.path.replace("." + x.name, "$" + x.name)).getOrElse(x.path))
-               )
-             }).flatten
-          case None => Nil
-        }
-        classOf[Mock] :: interfaces.flatten.filterNot(_ == method.getReturnType)
+        val interfaces = 
+        	for {
+        		c <- clazz :: clazz.getInterfaces.toList
+        		p <- ScalaSigParser.parse(c).toSeq
+        		s <- p.topLevelClasses.head.children.find(_.name == method.getName).toSeq
+        		val sym = s.asInstanceOf[MethodSymbol]
+        		i <- sym.children.grep[ClassSymbol]
+        		val r = i.infoType.asInstanceOf[RefinedType]
+        		x <- r.typeRefs.grep[TypeRefType].map(_.symbol).grep[ClassSymbol]
+        	} yield Class.forName(x.parent.map((k) => x.path.replace("." + x.name, "$" + x.name)).getOrElse(x.path))
+        	
+        classOf[Mock] :: interfaces.filterNot(_ == method.getReturnType)
       }
     }
     
