@@ -58,4 +58,20 @@ class ImplicitMocksTest extends FlatSpec with ImplicitMocks with ShouldMatchers 
 	  verify(as[PimpedCourse](course)).likes
 	  verify(as[PimpedCourse](course), never).totalSales
   }
+  
+  it should "be able to stub any objects" in {
+	  val course = new Course
+	  
+	  any[Course].likes returns 3
+	  
+	  course.likes should be === 3
+  }
+  it should "be able to verify any objects" in {
+	  val course = new Course
+	  
+	  course.likes
+	  
+	  verify(as[PimpedCourse](any[Course])).likes
+	  verify(as[PimpedCourse](any[Course]), never).totalSales
+  }
 }

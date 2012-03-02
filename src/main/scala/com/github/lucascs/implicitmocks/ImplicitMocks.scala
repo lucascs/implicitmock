@@ -87,25 +87,24 @@ trait ImplicitMocks extends BeforeAndAfterEach { self:FlatSpec =>
         
         val key = invocation.getMethod
         
-        def updateAndMock(arg:Arg) = {
+        def updateAndGetMock(arg:Arg) = {
           cache.update(key, arg :: cache.getOrElse(key, Nil))
           arg.mock
         }
         invocation.getArguments().headOption match {
           case None | Some(null) => 
             cache.get(key) match {
-              case None => updateAndMock(AnyArg(createMock(invocation))) 
+              case None => updateAndGetMock(AnyArg(createMock(invocation))) 
               case Some(list) => list.head.mock 
             }
           case Some(arg) =>
             cache.get(key) match {
-              case None => updateAndMock(SomeArg(arg, createMock(invocation)))
+              case None => updateAndGetMock(SomeArg(arg, createMock(invocation)))
               case Some(list) => 
-                val someargs = list.grep[SomeArg]
-				someargs.find(_.arg == arg)
-					.orElse(list.find(_.isInstanceOf[AnyArg]))
-					.map(_.mock)
-					.getOrElse(updateAndMock(SomeArg(arg, createMock(invocation))))
+				list.grep[SomeArg].find(_.arg == arg)
+				    .orElse(list.find(_.isInstanceOf[AnyArg]))
+				    .map(_.mock)
+				    .getOrElse(updateAndGetMock(SomeArg(arg, createMock(invocation))))
             }
         }
       } else {
