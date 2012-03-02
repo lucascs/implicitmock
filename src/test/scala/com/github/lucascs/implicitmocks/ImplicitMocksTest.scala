@@ -41,4 +41,21 @@ class ImplicitMocksTest extends FlatSpec with ImplicitMocks with ShouldMatchers 
 	  course.save should be === other
 	  evaluating(other.save) should produce[RuntimeException]
   }
+  
+  it should "be able to stub implicit methods from other traits" in {
+	  val course = new Course
+	  
+	  course.totalSales returns 2
+	  
+	  course.totalSales should be === 2
+  }
+  
+  it should "be able to verify implicit methods from other traits" in {
+	  val course = new Course
+	  
+	  course.likes
+	  
+	  verify(as[PimpedCourse](course)).likes
+	  verify(as[PimpedCourse](course), never).totalSales
+  }
 }
